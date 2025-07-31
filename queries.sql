@@ -69,6 +69,7 @@ group by
 order by
     EXTRACT(dow from s.sale_date),
     seller;
+--age_groups
 with age_sort as ( --запрос, который разбивает возраста на категории 
     select
         customer_id,
@@ -106,7 +107,7 @@ select
         EXTRACT(year from sales.sale_date), '-',
         LPAD(EXTRACT(month from sales.sale_date)::text, 2, '0')
     ) as selling_month,
-    COUNT(DISTINCT sales.customer_id) as total_customers
+    COUNT(distinct sales.customer_id) as total_customers,
     /*подсчитываем количество уникальных в месяце*/
 FLOOR(SUM(sales.quantity * products.price)) as income -- считаем выручку
 from sales
