@@ -70,7 +70,8 @@ order by
     EXTRACT(dow from s.sale_date),
     seller;
 with age_sort as ( --запрос, который разбивает возраста на категории 
-    select customer_id,
+		select 
+		customer_id,
         case
             when age between 16 and 25 then '16-25'
             when age between 26 and 40 then '26-40'
@@ -102,15 +103,15 @@ select
     (двух знаков, как указано),
     добавляем перед числом 0,
     чтобы корректно работала сортировка по возрастанию)*/
-        EXTRACT(year from sales.sale_date), '-', lpad(EXTRACT(month from sales.sale_date)::text, 2, '0')
+        EXTRACT(year from sales.sale_date), '-', 
+		LPAD(EXTRACT(month from sales.sale_date)::text, 2, '0')
     ) as selling_month,
     COUNT(DISTINCT sales.customer_id) AS total_customers
     /*подсчитываем количество уникальных в месяце*/
-    FLOOR(SUM(sales.quantity * products.price)) as income -- считаем выручку
+	FLOOR(SUM(sales.quantity * products.price)) as income -- считаем выручку
 from sales
-inner join products on
+inner join products on sales.product_id = products.product_id
 /*соединяем таблицы чтобы получить данные о ценах*/
-        sales.product_id = products.product_id
 group by selling_month
 order by selling_month; --сгруппировали и отсортировали по возрастанию
 -- special_offer
