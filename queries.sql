@@ -70,7 +70,7 @@ order by
     EXTRACT(dow from s.sale_date),
     seller;
 with age_sort as ( --запрос, который разбивает возраста на категории 
-		select 
+	select
 		customer_id,
         case
             when age between 16 and 25 then '16-25'
@@ -103,12 +103,12 @@ select
     (двух знаков, как указано),
     добавляем перед числом 0,
     чтобы корректно работала сортировка по возрастанию)*/
-        EXTRACT(year from sales.sale_date), '-', 
+        EXTRACT(year from sales.sale_date), '-',
 		LPAD(EXTRACT(month from sales.sale_date)::text, 2, '0')
     ) as selling_month,
-    COUNT(DISTINCT sales.customer_id) AS total_customers
+    COUNT(DISTINCT sales.customer_id) as total_customers
     /*подсчитываем количество уникальных в месяце*/
-	FLOOR(SUM(sales.quantity * products.price)) as income -- считаем выручку
+FLOOR(SUM(sales.quantity * products.price)) as income -- считаем выручку
 from sales
 inner join products on sales.product_id = products.product_id
 /*соединяем таблицы чтобы получить данные о ценах*/
@@ -120,7 +120,8 @@ with ranked_purchases as (
 каждого покупателя и нумеруются, начиная с первой*/
     select
         *,
-        row_number() over (partition by (customer_id) order by sale_date) as rn
+        row_number() over (partition by (customer_id) 
+		order by sale_date) as rn
     from sales
 )
 
@@ -137,8 +138,8 @@ inner join customers on ranked_purchases.customer_id = customers.customer_id
 inner join employees on ranked_purchases.sales_person_id = employees.employee_id
 /*присоединили таблицы которые нужны для имени и фамилии*/
 inner join products on ranked_purchases.product_id = products.product_id
-/*присоединили таблицу чтобы узнать стоимость покупки*/
-where rn = 1
+	/*присоединили таблицу чтобы узнать стоимость покупки*/
+where ranked_purchases.rn = 1
     and (ranked_purchases.quantity * products.price) = 0  
   /*отобрали тех, кто в первый раз закупился на
   0 (по акции) и у кого эта покупка была первой
