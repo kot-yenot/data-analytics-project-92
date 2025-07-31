@@ -125,8 +125,9 @@ with ranked_purchases as (
             over
             (
                 partition by (customer_id)
-				order by sale_date
-        ) as rn
+                order by sale_date
+            )
+        as rn
     from sales
 )
 
@@ -144,7 +145,8 @@ inner join employees on ranked_purchases.sales_person_id = employees.employee_id
 /*присоединили таблицы которые нужны для имени и фамилии*/
 inner join products on ranked_purchases.product_id = products.product_id
 /*присоединили таблицу чтобы узнать стоимость покупки*/
-    where ranked_purchases.rn = 1
+where
+    ranked_purchases.rn = 1
     and (ranked_purchases.quantity * products.price) = 0
 /*отобрали тех, кто в первый раз закупился на
   0 (по акции) и у кого эта покупка была первой
