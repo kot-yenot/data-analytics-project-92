@@ -121,9 +121,10 @@ with ranked_purchases as (
 каждого покупателя и нумеруются, начиная с первой*/
     select
         *,
-        ROW_NUMBER() over
-            (partition by (customer_id)
-    order by sale_date) as rn
+        ROW_NUMBER()
+			over
+			(partition by (customer_id)
+				order by sale_date		) as rn
     from sales
 )
 
