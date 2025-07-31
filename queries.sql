@@ -109,7 +109,7 @@ select
     ) as selling_month,
     COUNT(distinct sales.customer_id) as total_customers,
     /*подсчитываем количество уникальных в месяце*/
-FLOOR(SUM(sales.quantity * products.price)) as income -- считаем выручку
+    FLOOR(SUM(sales.quantity * products.price)) as income -- считаем выручку
 from sales
 inner join products on sales.product_id = products.product_id
 /*соединяем таблицы чтобы получить данные о ценах*/
@@ -121,15 +121,16 @@ with ranked_purchases as (
 каждого покупателя и нумеруются, начиная с первой*/
     select
         *,
-            row_number() over (partition by (customer_id)
-            order by sale_date) as rn
+        ROW_NUMBER() over
+            (partition by (customer_id)
+    order by sale_date) as rn
     from sales
 )
 
 select
+    ranked_purchases.sale_date,
     CONCAT(customers.first_name, ' ', customers.last_name) as customer,
     /*склеили имя и фамилию покупателя*/
-    ranked_purchases.sale_date,
     CONCAT(employees.first_name, ' ', employees.last_name) as seller
     /*склеили имя и фамилию продавца*/
 from ranked_purchases
