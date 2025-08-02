@@ -1,101 +1,73 @@
 --customers_count
 select COUNT(*) as customers_count
 from customers;/*
-функция подсчитывает количество записей в таблице
-(при условии, что каждая запись = покупатель,
-и они не дублируются)*/
+функция подсчитывает количество записей в таблице*/
 --top_10_total_income
 select
     CONCAT(e.first_name, ' ', e.last_name) as seller, -- склеили имя и фамилию
     COUNT(s.sales_id) as operations, -- посчитали количество сделок
-    FLOOR(SUM(s.quantity * p.price)) as income/*округлили
-в меньшую, посчитали на какую сумму
-продавец продал товаров*/
+    FLOOR(SUM(s.quantity * p.price)) as income
 from sales as s
 -- соединили таблицы
 inner join employees as e on s.sales_person_id = e.employee_id
-inner join products as p on s.product_id = p.product_id -- соединили таблицы
-group by e.employee_id, e.first_name, e.last_name --сгруппировали поля 
-order by income desc -- отсортировали
-limit 10; -- ограничили вывод
+inner join products as p on s.product_id = p.product_id 
+group by seller
+order by income desc 
+limit 10;
+
 --lowest_average_income
---создали CTE, высчитывающий среднее одного продавца
-with avg_sales_per_employee as (
-    select
-        s.sales_person_id,
-        -- склеили имя и фамилию
-        CONCAT(e.first_name, ' ', e.last_name) as seller,
-        -- посчитали среднюю выручку и округлили
-        FLOOR(AVG(s.quantity * p.price)) as average_income
-    from sales as s
-    -- соединили таблицы
-    inner join employees as e on s.sales_person_id = e.employee_id
-    inner join products as p on s.product_id = p.product_id -- соединили таблицы
-    group by s.sales_person_id, e.first_name, e.last_name -- сгруппировали
-),
-
-overall_avg as ( --создали CTE, подсчитывающее среднее между всех продавцов
-    select FLOOR(AVG(sales.quantity * products.price)) as global_avg_deal_value
-    from sales
-    inner join products on sales.product_id = products.product_id
+WITH overall_avg AS ( -- CTE для среднего значения сделок по всем продавцам
+    SELECT FLOOR(AVG(s.quantity * p.price)) AS global_avg_deal_value
+    FROM sales AS s
+    INNER JOIN products AS p ON s.product_id = p.product_id
 )
-
-select
-    avg_sales_per_employee.seller,
-    avg_sales_per_employee.average_income
-from avg_sales_per_employee
-inner join overall_avg
-    -- сравнили среднее продавца и среднее продавцов
-    on avg_sales_per_employee.average_income < overall_avg.global_avg_deal_value
-order by avg_sales_per_employee.average_income asc;
---day_of_the_week_income
-select
-    CONCAT(e.first_name, ' ', e.last_name) as seller, -- склеили имя и фамилию
-    case EXTRACT(dow from s.sale_date) --отделили день недели
-        when 0 then 'Sunday' when 1 then 'Monday'
-        when 2 then 'Tuesday'
-        when 3 then 'Wednesday'
-        when 4 then 'Thursday'
-        when 5 then 'Friday'
-        when 6 then 'Saturday'
-    end as day_of_week,
-    FLOOR(SUM(s.quantity * p.price)) as total_revenue --суммировали выручку
-from sales as s
-inner join employees as e on s.sales_person_id = e.employee_id
-inner join products as p on sales.product_id = products.product_id
-group by
-    CONCAT(e.first_name, ' ', e.last_name),
-    EXTRACT(dow from s.sale_date)
-order by
-    EXTRACT(dow from s.sale_date),
+SELECT 
+    CONCAT(e.first_name, ' ', e.last_name) AS seller,
+    FLOOR(AVG(s.quantity * p.price)) AS average_income
+FROM sales AS s
+INNER JOIN employees AS e ON s.sales_person_id = e.employee_id
+INNER JOIN products AS p ON s.product_id = p.product_id
+CROSS JOIN overall_avg  -- соединяем с CTE для фильтрации
+GROUP BY seller
+HAVING FLOOR(AVG(s.quantity * p.price)) < (SELECT global_avg_deal_value FROM overall_avg)  -- фильтруем по среднему
+ORDER BY average_income ASC;
+-- day_of_the_week_income
+SELECT
+    CONCAT(e.first_name, ' ', e.last_name) AS seller,
+    TO_CHAR(s.sale_date, 'Day') AS day_of_week, 
+    FLOOR(SUM(s.quantity * p.price)) AS total_revenue
+FROM sales AS s
+INNER JOIN employees AS e ON s.sales_person_id = e.employee_id
+INNER JOIN products AS p ON s.product_id = p.product_id
+GROUP BY
+    seller,
+    day_of_week,
+    EXTRACT(ISODOW FROM s.sale_date)
+ORDER BY
+    EXTRACT(ISODOW FROM s.sale_date),  -- Сортировка по номеру дня (пн-вс)
     seller;
---age_groups
-with age_sort as ( --запрос, который разбивает возраста на категории 
-    select
-        customer_id,
-        case
-            when age between 16 and 25 then '16-25'
-            when age between 26 and 40 then '26-40'
-            when age >= 41 then '40+'
-        end as age_category
-    from customers
-)
-
-select
-/*запрос, который выводит категории и
-подсчитывает количество покупателей в них*/
+-- age_groups
+SELECT
     age_category,
-    COUNT(customer_id) as age_count
-from age_sort
-group by age_category--сгруппировали по категориям
-order by
-    case age_category
-        /*в зависимости от возраста относим в одну из
-        трёх категорий для подсчета*/
-        when '16-25' then 1
-        when '26-40' then 2
-        when '40+' then 3
-    end;
+    COUNT(customer_id) AS age_count
+FROM (
+    SELECT
+        customer_id,
+        CASE
+            WHEN age BETWEEN 16 AND 25 THEN '16-25'
+            WHEN age BETWEEN 26 AND 40 THEN '26-40'
+            WHEN age >= 41 THEN '40+'
+        END AS age_category,
+        CASE
+            WHEN age BETWEEN 16 AND 25 THEN 1
+            WHEN age BETWEEN 26 AND 40 THEN 2
+            WHEN age >= 41 THEN 3
+        END AS sort_order
+    FROM customers
+) AS categorized
+GROUP BY age_category, sort_order
+ORDER BY sort_order;
+
 -- customers_by_month
 select
     CONCAT(
@@ -116,40 +88,13 @@ inner join products on sales.product_id = products.product_id
 group by selling_month
 order by selling_month; --сгруппировали и отсортировали по возрастанию
 -- special_offer
-with ranked_purchases as (
-/*CTE с помощью которого находятся покупки
-каждого покупателя и нумеруются, начиная с первой*/
-    select
-        *,
-        ROW_NUMBER()
-            over
-            (
-                partition by (customer_id)
-                order by sale_date
-            )
-        as rn
-    from sales
-)
-
-select
-    ranked_purchases.sale_date,
-    CONCAT(customers.first_name, ' ', customers.last_name) as customer,
-    /*склеили имя и фамилию покупателя*/
-    CONCAT(employees.first_name, ' ', employees.last_name) as seller
-    /*склеили имя и фамилию продавца*/
-from ranked_purchases
-inner join customers on ranked_purchases.customer_id = customers.customer_id
-/*присоединили таблицы которые нужны для имени
-и фамилии*/
-inner join employees on ranked_purchases.sales_person_id = employees.employee_id
-/*присоединили таблицы которые нужны для имени и фамилии*/
-inner join products on ranked_purchases.product_id = products.product_id
-/*присоединили таблицу чтобы узнать стоимость покупки*/
-where
-    ranked_purchases.rn = 1
-    and (ranked_purchases.quantity * products.price) = 0
-/*отобрали тех, кто в первый раз закупился на
-  0 (по акции) и у кого эта покупка была первой
-  (взяли первую строчку из оконной функции
-  каждого покупателя)*/
-order by ranked_purchases.customer_id;
+SELECT DISTINCT ON (s.customer_id)
+    s.sale_date,
+    CONCAT(c.first_name, ' ', c.last_name) AS customer,
+    CONCAT(e.first_name, ' ', e.last_name) AS seller
+FROM sales s
+INNER JOIN customers c ON s.customer_id = c.customer_id
+INNER JOIN employees e ON s.sales_person_id = e.employee_id
+INNER JOIN products p ON s.product_id = p.product_id
+WHERE (s.quantity * p.price) = 0
+ORDER BY s.customer_id, s.sale_date;
