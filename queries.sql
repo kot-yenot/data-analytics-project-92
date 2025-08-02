@@ -14,19 +14,19 @@ inner join products as p on s.product_id = p.product_id
 group by seller
 order by income desc
 limit 10;
-
 --lowest_average_income
 with overall_avg as ( -- CTE для среднего значения сделок по всем продавцам
     select FLOOR(AVG(s.quantity * p.price)) as global_avg_deal_value
     from sales as s
     inner join products as p on s.product_id = p.product_id
 )
+
 select 
-    CONCAT(e.first_name, ' ', e.last_name) AS seller,
-    FLOOR(AVG(s.quantity * p.price)) AS average_income
+    CONCAT(e.first_name, ' ', e.last_name) as seller,
+    FLOOR(AVG(s.quantity * p.price)) as average_income
 from sales as s
-inner join employees AS e ON s.sales_person_id = e.employee_id
-inner join products AS p ON s.product_id = p.product_id
+inner join employees as e on s.sales_person_id = e.employee_id
+inner join products as p on s.product_id = p.product_id
 cross join overall_avg  -- соединяем с CTE для фильтрации
 group by seller
 having FLOOR(AVG(s.quantity * p.price)) < (SELECT global_avg_deal_value FROM overall_avg)  -- фильтруем по среднему
@@ -59,11 +59,11 @@ from (
             WHEN age >= 41 THEN '40+'
         END AS age_category,
         CASE
-            WHEN age BETWEEN 16 AND 25 THEN 1
-            WHEN age BETWEEN 26 AND 40 THEN 2
-            WHEN age >= 41 THEN 3
-        END AS sort_order
-    FROM customers
+            when age between 16 and 25 then 1
+            when age between 26 and 40 then 2
+            when age >= 41 then 3
+        END as sort_order
+    from customers
 ) as categorized
 group by age_category, sort_order
 order by sort_order;
@@ -90,12 +90,11 @@ order by selling_month; --сгруппировали и отсортировал
 -- special_offer
 select distinct on (s.customer_id)
     s.sale_date,
-    CONCAT(c.first_name, ' ', c.last_name) AS customer,
-    CONCAT(e.first_name, ' ', e.last_name) AS seller
+    CONCAT(c.first_name, ' ', c.last_name) as customer,
+    CONCAT(e.first_name, ' ', e.last_name) as seller
 FROM sales s
-inner join customers c on s.customer_id = c.customer_id
-inner join employees e on s.sales_person_id = e.employee_id
-inner join products p on s.product_id = p.product_id
+inner join customers as c on s.customer_id = c.customer_id
+inner join employees as e on s.sales_person_id = e.employee_id
+inner join products as p on s.product_id = p.product_id
 where (s.quantity * p.price) = 0
 order by s.customer_id, s.sale_date;
-
