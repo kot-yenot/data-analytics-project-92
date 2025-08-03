@@ -53,16 +53,16 @@ select
 from (
     select
         customer_id,
-        CASE
-            WHEN age BETWEEN 16 AND 25 THEN '16-25'
-            WHEN age BETWEEN 26 AND 40 THEN '26-40'
-            WHEN age >= 41 THEN '40+'
-        END AS age_category,
-        CASE
+        case
+            when age between 16 and 25 then '16-25'
+            when age between 26 and 40 then '26-40'
+            when age >= 41 THEN '40+'
+        end as age_category,
+        case
             when age between 16 and 25 then 1
             when age between 26 and 40 then 2
             when age >= 41 then 3
-        END as sort_order
+        end as sort_order
     from customers
 ) as categorized
 group by age_category, sort_order
@@ -92,9 +92,10 @@ select distinct on (s.customer_id)
     s.sale_date,
     CONCAT(c.first_name, ' ', c.last_name) as customer,
     CONCAT(e.first_name, ' ', e.last_name) as seller
-FROM sales s
+from sales as s
 inner join customers as c on s.customer_id = c.customer_id
 inner join employees as e on s.sales_person_id = e.employee_id
 inner join products as p on s.product_id = p.product_id
 where (s.quantity * p.price) = 0
 order by s.customer_id, s.sale_date;
+
