@@ -27,9 +27,8 @@ select
 from sales as s
 inner join employees as e on s.sales_person_id = e.employee_id
 inner join products as p on s.product_id = p.product_id
-cross join overall_avg  -- соединяем с CTE для фильтрации
 group by seller
-having FLOOR(AVG(s.quantity * p.price)) < (SELECT global_avg_deal_value FROM overall_avg)  -- фильтруем по среднему
+having FLOOR(AVG(s.quantity * p.price)) < (select global_avg_deal_value from overall_avg)  -- фильтруем по среднему
 order by average_income asc
 -- day_of_the_week_income
 select
@@ -49,14 +48,14 @@ order by
 -- age_groups
 select
     age_category,
-    COUNT(customer_id) AS age_count
+    COUNT(customer_id) as age_count
 from (
     select
         customer_id,
         case
             when age between 16 and 25 then '16-25'
             when age between 26 and 40 then '26-40'
-            when age >= 41 THEN '40+'
+            when age >= 41 then '40+'
         end as age_category,
         case
             when age between 16 and 25 then 1
@@ -98,4 +97,3 @@ inner join employees as e on s.sales_person_id = e.employee_id
 inner join products as p on s.product_id = p.product_id
 where (s.quantity * p.price) = 0
 order by s.customer_id, s.sale_date;
-
