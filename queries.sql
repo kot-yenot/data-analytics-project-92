@@ -15,24 +15,24 @@ group by seller
 order by income desc
 limit 10;
 -- lowest_average_income
-WITH seller_averages AS (
-    SELECT 
-        CONCAT(e.first_name, ' ', e.last_name) AS seller,
-        FLOOR(AVG(s.quantity * p.price)) AS seller_avg_income,
-        (SELECT FLOOR(AVG(s2.quantity * p2.price)) 
-         FROM sales s2 
-         JOIN products p2 ON s2.product_id = p2.product_id) AS global_avg
-    FROM sales s
-    JOIN employees e ON s.sales_person_id = e.employee_id
-    JOIN products p ON s.product_id = p.product_id
-    GROUP BY CONCAT(e.first_name, ' ', e.last_name)
+with seller_averages as (
+    select
+        CONCAT(e.first_name, ' ', e.last_name) as seller,
+        FLOOR(AVG(s.quantity * p.price)) as seller_avg_income,
+        (select FLOOR(AVG(s2.quantity * p2.price)) 
+         from sales s2 
+         inner join products p2 on s2.product_id = p2.product_id) as global_avg
+    from sales s
+    inner join employees e on s.sales_person_id = e.employee_id
+    inner join products p on s.product_id = p.product_id
+    group by CONCAT(e.first_name, ' ', e.last_name)
 )
-SELECT 
+select 
     seller,
-    seller_avg_income AS average_income
-FROM seller_averages
-WHERE seller_avg_income < global_avg
-ORDER BY average_income ASC;
+    seller_avg_income as average_income
+from seller_averages
+where seller_avg_income < global_avg
+order by average_income asc;
 -- age_groups
 select
     age_category,
@@ -84,4 +84,5 @@ inner join employees as e on s.sales_person_id = e.employee_id
 inner join products as p on s.product_id = p.product_id
 where (s.quantity * p.price) = 0
 order by s.customer_id, s.sale_date;
+
 
