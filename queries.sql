@@ -19,8 +19,9 @@ with seller_averages as (
     select
         CONCAT(e.first_name, ' ', e.last_name) as seller,
         FLOOR(AVG(s.quantity * p.price)) as seller_avg_income,
-         (select 
-            FLOOR(AVG(s2.quantity * p2.price))
+        (
+            select
+                FLOOR(AVG(s2.quantity * p2.price))
             from sales as s2
             inner join products as p2 on s2.product_id = p2.product_id
             )as global_avg
@@ -87,4 +88,3 @@ inner join employees as e on s.sales_person_id = e.employee_id
 inner join products as p on s.product_id = p.product_id
 where (s.quantity * p.price) = 0
 order by s.customer_id, s.sale_date;
-
